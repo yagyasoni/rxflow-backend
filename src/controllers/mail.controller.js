@@ -1,4 +1,4 @@
-const transporter = require("../config/mailer");
+const sendMail = require("../config/mailer");
 
 /**
  * RX SUBMISSION API
@@ -21,9 +21,7 @@ exports.sendRxMail = async (req, res) => {
       <p>Status: <strong>Prescription mail sent</strong></p>
     `;
 
-    await transporter.sendMail({
-      from: `"RxFlow AI" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
+    await sendMail({
       subject: "New Rx Submission",
       html: mailContent,
     });
@@ -39,7 +37,7 @@ exports.sendRxMail = async (req, res) => {
 };
 
 /**
- * CONTACT FORM API (unchanged)
+ * CONTACT FORM API
  */
 exports.sendContactMail = async (req, res) => {
   try {
@@ -54,14 +52,14 @@ exports.sendContactMail = async (req, res) => {
       <p>${message}</p>
     `;
 
-    await transporter.sendMail({
-      from: `"RxFlow Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
+    await sendMail({
       subject: "New Contact Inquiry",
       html: mailContent,
     });
 
-    res.status(200).json({ message: "Contact mail sent successfully" });
+    res.status(200).json({
+      message: "Contact mail sent successfully",
+    });
 
   } catch (error) {
     console.error(error);
@@ -70,7 +68,7 @@ exports.sendContactMail = async (req, res) => {
 };
 
 /**
- * PRESCRIPTION TRANSFER API (NEW – MATCHES IMAGE)
+ * PRESCRIPTION TRANSFER API
  */
 exports.sendTransferMail = async (req, res) => {
   try {
@@ -108,9 +106,7 @@ exports.sendTransferMail = async (req, res) => {
       <p>${notes || "N/A"}</p>
     `;
 
-    await transporter.sendMail({
-      from: `"RxFlow Transfers" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
+    await sendMail({
       subject: "Prescription Transfer Request",
       html,
     });
@@ -118,8 +114,9 @@ exports.sendTransferMail = async (req, res) => {
     res.status(200).json({
       message: "Prescription transfer request sent successfully",
     });
-  } catch (err) {
-    console.error(err);
+
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to send transfer request" });
   }
 };
