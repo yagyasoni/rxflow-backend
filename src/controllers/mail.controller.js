@@ -79,8 +79,24 @@ exports.sendTransferMail = async (req, res) => {
       notes,
     } = req.body;
 
-    if (!patient || !previousPharmacy || !prescriptions) {
-      return res.status(400).json({ message: "Missing required fields" });
+    // Destructure and validate patient subfields
+    const { firstName, lastName, phone, dob } = patient || {};
+    if (!firstName || !lastName || !phone || !dob) {
+      return res.status(400).json({ message: "Missing patient subfields" });
+    }
+
+    // Destructure and validate previousPharmacy subfields
+    const { name: prevName, phone: prevPhone } = previousPharmacy || {};
+    if (!prevName || !prevPhone) {
+      return res.status(400).json({ message: "Missing previousPharmacy subfields" });
+    }
+
+    // Destructure and validate prescriptions subfields (if provided)
+    if (prescriptions) {
+      const { name, address } = prescriptions;
+      if (!name || !address) {
+        return res.status(400).json({ message: "Missing prescriptions subfields" });
+      }
     }
 
     const html = `
@@ -88,19 +104,23 @@ exports.sendTransferMail = async (req, res) => {
 
       <h3>Patient Details</h3>
       <p>
-        <strong>Name:</strong> ${patient.firstName} ${patient.lastName}<br/>
-        <strong>Phone:</strong> ${patient.phone}<br/>
-        <strong>Date of Birth:</strong> ${patient.dob}
+        <strong>Name:</strong> ${firstName} ${lastName}<br/>
+        <strong>Phone:</strong> ${phone}<br/>
+        <strong>Date of Birth:</strong> ${dob}
       </p>
 
       <h3>Previous Pharmacy Info</h3>
       <p>
-        <strong>Pharmacy Name:</strong> ${previousPharmacy.name}<br/>
-        <strong>Pharmacy Phone:</strong> ${previousPharmacy.phone}
+        <strong>Pharmacy Name:</strong> ${prevName}<br/>
+        <strong>Pharmacy Phone:</strong> ${prevPhone}
       </p>
 
+      ${prescriptions ? `
       <h3>Prescriptions</h3>
-      <p>${prescriptions}</p>
+      <p>
+        <strong>Pharmacy Name:</strong> ${prescriptions.name}<br/>
+        <strong>Pharmacy Address:</strong> ${prescriptions.address}
+      </p>` : ''}
 
       <h3>Notes</h3>
       <p>${notes || "N/A"}</p>
