@@ -70,35 +70,56 @@ exports.sendContactMail = async (req, res) => {
 /**
  * PRESCRIPTION TRANSFER API
  */
+
 exports.sendTransferMail = async (req, res) => {
   try {
-    const {
-      patient,
-      previousPharmacy,
-      prescriptions,
-      notes,
-    } = req.body;
+    const { patient, previousPharmacy, prescriptions, notes } = req.body;
 
-    // Destructure and validate patient subfields
-    const { firstName, lastName, phone, dob } = patient || {};
+    /* -------------------- 1. REQUIRED field check -------------------- */
+    if (!patient || !previousPharmacy) {
+      return res.status(400).json({
+        message: "Missing required fields: patient and previousPharmacy",
+      });
+    }
+
+    /* -------------------- 2. Validate patient subfields -------------------- */
+    const { firstName, lastName, phone, dob } = patient;
+
     if (!firstName || !lastName || !phone || !dob) {
-      return res.status(400).json({ message: "Missing patient subfields" });
+      return res.status(400).json({
+        message: "Missing patient subfields",
+      });
     }
 
-    // Destructure and validate previousPharmacy subfields
-    const { name: prevName, address: prevAddress } = previousPharmacy || {};
-    if (!prevName || !prevAddress) {
-      return res.status(400).json({ message: "Missing previousPharmacy subfields" });
+    /* -------------------- 3. Validate previousPharmacy subfields -------------------- */
+    const { name, address } = previousPharmacy;
+
+    if (!name || !address) {
+      return res.status(400).json({
+        message: "Missing previousPharmacy subfields",
+      });
     }
 
-    // Destructure and validate prescriptions subfields (if provided)
+    /* -------------------- 4. OPTIONAL: Validate prescriptions -------------------- */
     if (prescriptions) {
-      const { name, rxnumber } = prescriptions;
-      if (!name || !rxnumber) {
-        return res.status(400).json({ message: "Missing prescriptions subfields" });
+      if (!Array.isArray(prescriptions)) {
+        return res.status(400).json({
+          message: "Prescriptions must be an array",
+        });
+      }
+
+      for (const rx of prescriptions) {
+        const { name, rxnumber } = rx || {};
+
+        if (!name || !rxnumber) {
+          return res.status(400).json({
+            message: "Each prescription must have name and rxnumber",
+          });
+        }
       }
     }
 
+    /* -------------------- 5. Generate Email HTML -------------------- */
     const html = `
       <h2>Prescription Transfer Request</h2>
 
@@ -111,16 +132,25 @@ exports.sendTransferMail = async (req, res) => {
 
       <h3>Previous Pharmacy Info</h3>
       <p>
-        <strong>Pharmacy Name:</strong> ${prevName}<br/>
-        <strong>Pharmacy Address:</strong> ${prevAddress}
+        <strong>Pharmacy Name:</strong> ${name}<br/>
+        <strong>Pharmacy Address:</strong> ${address}
       </p>
 
-      ${prescriptions ? `
-      <h3>Prescriptions</h3>
-      <p>
-        <strong>Pharmacy Name:</strong> ${prescriptions.name}<br/>
-        <strong>Pharmacy Rx Number:</strong> ${prescriptions.rxnumber}
-      </p>` : ''}
+      ${prescriptions && prescriptions.length > 0 ? `
+        <h3>Prescriptions</h3>
+        <ul>
+          ${prescriptions
+            .map(
+              rx => `
+                <li>
+                  <strong>Drug/Name:</strong> ${rx.name} |
+                  <strong>Rx Number:</strong> ${rx.rxnumber}
+                </li>
+              `
+            )
+            .join("")}
+        </ul>
+      ` : ''}
 
       <h3>Notes</h3>
       <p>${notes || "N/A"}</p>
@@ -131,12 +161,14 @@ exports.sendTransferMail = async (req, res) => {
       html,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Prescription transfer request sent successfully",
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to send transfer request" });
+    return res.status(500).json({
+      message: "Failed to send transfer request",
+    });
   }
 };
+
