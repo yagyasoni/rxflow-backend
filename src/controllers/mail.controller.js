@@ -86,15 +86,15 @@ exports.sendTransferMail = async (req, res) => {
     }
 
     // Destructure and validate previousPharmacy subfields
-    const { name: prevName, phone: prevPhone } = previousPharmacy || {};
-    if (!prevName || !prevPhone) {
+    const { name: prevName, address: prevAddress } = previousPharmacy || {};
+    if (!prevName || !prevAddress) {
       return res.status(400).json({ message: "Missing previousPharmacy subfields" });
     }
 
     // Destructure and validate prescriptions subfields (if provided)
     if (prescriptions) {
-      const { name, address } = prescriptions;
-      if (!name || !address) {
+      const { name, rxnumber } = prescriptions;
+      if (!name || !rxnumber) {
         return res.status(400).json({ message: "Missing prescriptions subfields" });
       }
     }
@@ -112,14 +112,14 @@ exports.sendTransferMail = async (req, res) => {
       <h3>Previous Pharmacy Info</h3>
       <p>
         <strong>Pharmacy Name:</strong> ${prevName}<br/>
-        <strong>Pharmacy Phone:</strong> ${prevPhone}
+        <strong>Pharmacy Address:</strong> ${prevAddress}
       </p>
 
       ${prescriptions ? `
       <h3>Prescriptions</h3>
       <p>
         <strong>Pharmacy Name:</strong> ${prescriptions.name}<br/>
-        <strong>Pharmacy Address:</strong> ${prescriptions.address}
+        <strong>Pharmacy Rx Number:</strong> ${prescriptions.rxnumber}
       </p>` : ''}
 
       <h3>Notes</h3>
