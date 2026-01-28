@@ -172,3 +172,104 @@ exports.sendTransferMail = async (req, res) => {
   }
 };
 
+
+/* ======================================================
+   MEDICATION AVAILABILITY API
+   ====================================================== */
+exports.sendMedicationAvailabilityMail = async (req, res) => {
+  try {
+    const { medicationName, firstName, lastName, dob, phone, email, consent } = req.body;
+
+    if (!medicationName || !firstName || !lastName || !phone) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    const html = `
+      <div style="font-family: Arial, sans-serif;">
+        <h2 style="color: #059669;">Medication Availability Request</h2>
+        <p><strong>Medication:</strong> <span style="font-size: 1.2em;">${medicationName}</span></p>
+        <hr/>
+        <h3>Patient Information</h3>
+        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+        <p><strong>DOB:</strong> ${dob || "N/A"}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Email:</strong> ${email || "N/A"}</p>
+        <p><strong>Consent Provided:</strong> ${consent ? "Yes" : "No"}</p>
+      </div>
+    `;
+
+    await sendMail({
+      subject: `Availability Inquiry: ${medicationName}`,
+      html,
+    });
+
+    res.status(200).json({ message: "Availability request sent successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to send availability request" });
+  }
+};
+
+/* ======================================================
+   SAVINGS & COPAY REQUEST API
+   ====================================================== */
+exports.sendSavingsRequestMail = async (req, res) => {
+  try {
+    // Destructure data from req.body (Multer populates this)
+    const {
+      firstName,
+      lastName,
+      dob,
+      phone,
+      medicationName,
+      strength,
+      insuranceStatus,
+      expensiveElsewhere,
+      currentPharmacy,
+      approximatePrice,
+      consent,
+    } = req.body;
+
+    // Build Email HTML
+    const html = `
+      <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #059669;">Savings & Copay Assistance Request</h2>
+        <p><strong>Medication:</strong> ${medicationName} ${strength || ""}</p>
+        <hr />
+        <h3>Patient Info</h3>
+        <p><strong>Name:</strong> ${firstName} ${lastName}<br/>
+           <strong>DOB:</strong> ${dob}<br/>
+           <strong>Phone:</strong> ${phone}</p>
+        
+        <h3>Insurance & Cost</h3>
+        <p><strong>Status:</strong> ${insuranceStatus}<br/>
+           <strong>Expensive at other pharmacy:</strong> ${expensiveElsewhere}</p>
+        
+        <h3>Optional Info</h3>
+        <p><strong>Current Pharmacy:</strong> ${currentPharmacy || "N/A"}<br/>
+           <strong>Price Paid/Quoted:</strong> ${approximatePrice || "N/A"}</p>
+        <p><strong>Consent Given:</strong> ${consent ? "Yes" : "No"}</p>
+      </div>
+    `;
+
+    const mailOptions = {
+      subject: `Savings Request: ${medicationName} - ${firstName} ${lastName}`,
+      html,
+      attachments: [],
+    };
+
+    // If a file was uploaded via Multer, attach it
+    if (req.file) {
+      mailOptions.attachments.push({
+        filename: req.file.originalname,
+        content: req.file.buffer,
+      });
+    }
+
+    await sendMail(mailOptions);
+    res.status(200).json({ message: "Savings request sent successfully" });
+  } catch (error) {
+    console.error("Backend Error:", error);
+    res.status(500).json({ message: "Failed to send savings request" });
+  }
+};
