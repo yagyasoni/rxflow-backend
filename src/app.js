@@ -9,7 +9,7 @@ app.use(express.json());
 app.use("/api/mail", require("./routes/mail.routes"));
 
 app.get("/", (req, res) => {
-  res.send("RxFlow Backend Running");
+  res.send("Backend Running");
 });
 
 module.exports = app;
